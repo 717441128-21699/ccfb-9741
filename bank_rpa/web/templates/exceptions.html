@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}异常处理{% endblock %}
+{% block body %}
+<div class="card">
+  <h2>异常处理（对不上的银行流水 / ERP 单据）</h2>
+  <p class="muted">勾选左右两列记录后可做人工匹配（支持一对多、多对一）；也可将银行单边流水标记忽略。
+    人工处理结果会写入指纹记忆，下次对账同特征记录自动复用，不再重复上报。</p>
+  <form method="post" action="{{ url_for('exceptions_match') }}">
+    <div class="toolbar">
+      <input name="note" placeholder="处理说明（可选，如：尾差已确认/跨月到账）" style="min-width:280px">
+      <button class="btn" type="submit">人工匹配勾选项</button>
+    </form>
+    <div class="grid2">
+      <div>
+        <h3>银行有、ERP 无（{{ bank_only|length }} 笔）</h3>
+        <div class="scroll">
+        <table>
+          <tr><th class="checkcol">选</th><th>日期</th><th>账号</th><th>方向</th><th>金额</th><th>对方户名</th><th>摘要</th></tr>
+          {% for t in bank_only %}
+          <tr>
+            <td class="checkcol"><input type="checkbox" name="txn_ids" value="{{ t.id }}"></td>
+            <td>{{ t.txn_date }}</td>
+            <td class="mono muted">{{ t.account_no }}</td>
+            <td>{{ '收' if t.direction=='in' else '付' }}</td>
+            <td class="mono">{{ '%.2f'|format(t.amount) }}</td>
+            <td class="wrap">{{ t.counterparty }}</td>
+            <td class="wrap muted">{{ t.summary }}</td>
+          </tr>
+          {% else %}<tr><td colspan="7" class="ok-text">没有未匹配的银行流水 ✓</td></tr>{% endfor %}
+        </table>
+        </div>
+      </div>
+      <div>
+        <h3>ERP 有、银行无（{{ erp_only|length }} 笔）</h3>
+        <div class="scroll">
+        <table>
+          <tr><th class="checkcol">选</th><th>日期</th><th>单据号</th><th>方向</th><th>金额</th><th>对方户名</th><th>摘要</th></tr>
+          {% for e in erp_only %}
+          <tr>
+            <td class="checkcol"><input type="checkbox" name="erp_ids" value="{{ e.id }}"></td>
+            <td>{{ e.record_date }}</td>
+            <td class="mono muted">{{ e.erp_no }}</td>
+            <td>{{ '收' if e.direction=='in' else '付' }}</td>
+            <td class="mono">{{ '%.2f'|format(e.amount) }}</td>
+            <td class="wrap">{{ e.counterparty }}</td>
+            <td class="wrap muted">{{ e.summary }}</td>
+          </tr>
+          {% else %}<tr><td colspan="7" class="ok-text">没有未匹配的 ERP 单据 ✓</td></tr>{% endfor %}
+        </table>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <form method="post" action="{{ url_for('exceptions_ignore') }}" style="margin-top:18px">
+    <div class="toolbar">
+      <input name="note" placeholder="忽略原因（可选，如：银行手续费、测试账）" style="min-width:280px">
+      <button class="btn gray" type="submit">忽略勾选的银行流水</button>
+    </div>
+    <p class="muted">提示：忽略操作只读取左侧勾选的银行流水。</p>
+  </form>
+</div>
+
+<div class="card">
+  <h2>人工处理记忆（{{ resolutions|length }} 条，跨对账轮次生效）</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>类型</th><th>指纹（账户|方向|归一户名|金额）</th><th>说明</th><th>记录时间</th></tr>
+    {% for r in resolutions %}
+    <tr>
+      <td>{% if r.kind=='match' %}<span class="tag manual">人工匹配</span>{% else %}<span class="tag ign">忽略</span>{% endif %}</td>
+      <td class="mono wrap" style="max-width:520px">{{ r.fingerprint }}</td>
+      <td class="wrap muted">{{ r.note or '' }}</td>
+      <td class="muted">{{ r.created_at }}</td>
+    </tr>
+    {% else %}<tr><td colspan="4" class="muted">暂无人工处理记录</td></tr>{% endfor %}
+  </table>
+  </div>
+</div>
+{% endblock %}

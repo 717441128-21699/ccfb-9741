@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}账户配置{% endblock %}
+{% block body %}
+<div class="card">
+  <h2>账户配置（{{ accounts|length }} 个账户 / 5 家银行）</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>ID</th><th>银行</th><th>账号</th><th>账户名称</th><th>归属主体</th>
+        <th>登录方式</th><th>会话超时</th><th>下载进度</th><th>状态</th><th>操作</th></tr>
+    {% for a in accounts %}
+    {% set p = prog[a.id] %}
+    <tr>
+      <td>{{ a.id }}</td>
+      <td>{{ a.bank_name }}</td>
+      <td class="mono">{{ a.account_no }}</td>
+      <td>{{ a.account_name }}</td>
+      <td class="wrap">{{ a.entity }}</td>
+      <td>
+        {% set lt = {'pwd':'账号密码','usbk':'U盾证书','smscode':'短信验证','qrcode':'扫码确认'} %}
+        <span class="pill">{{ lt.get(a.login_type, a.login_type) }}</span>
+      </td>
+      <td>{{ a.timeout_minutes }} 分钟</td>
+      <td>
+        {% if p.total %}
+          <span class="ok-text">{{ p.ok }} 成功</span> /
+          {% if p.fail %}<span class="err-text">{{ p.fail }} 失败</span> / {% endif %}
+          {{ p.total }} 总文件
+        {% else %}<span class="muted">未下载</span>{% endif %}
+      </td>
+      <td>{% if a.enabled %}<span class="tag ok">启用</span>{% else %}<span class="tag pend">停用</span>{% endif %}</td>
+      <td>
+        <form method="post" action="{{ url_for('accounts_toggle', aid=a.id) }}">
+          <button class="btn gray sm" type="submit">{{ '停用' if a.enabled else '启用' }}</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+</div>
+{% endblock %}

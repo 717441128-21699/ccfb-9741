@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}下载任务{% endblock %}
+{% block body %}
+<div class="card">
+  <h2>发起下载</h2>
+  <div class="toolbar">
+    <form method="post" action="{{ url_for('tasks_create_all') }}" class="toolbar" style="margin:0">
+      <label>账期</label>
+      <input type="date" name="date_from" value="{{ d_from }}">
+      <span>至</span>
+      <input type="date" name="date_to" value="{{ d_to }}">
+      <button class="btn" type="submit" {% if running %}disabled{% endif %}>一键批量下载全部启用账户</button>
+    </form>
+  </div>
+  <form method="post" action="{{ url_for('tasks_create') }}" class="toolbar" style="margin:0">
+    <label>单账户</label>
+    <select name="account_id" style="min-width:300px">
+      {% for a in accounts_for_select() %}
+      <option value="{{ a.id }}">{{ a.bank_name }} · {{ a.account_no }} · {{ a.entity }}</option>
+      {% endfor %}
+    </select>
+    <input type="date" name="date_from" value="{{ d_from }}">
+    <input type="date" name="date_to" value="{{ d_to }}">
+    <button class="btn sec" type="submit" {% if running %}disabled{% endif %}>创建并执行</button>
+  </form>
+  <form method="post" action="{{ url_for('tasks_ingest') }}" style="margin-top:12px">
+    <button class="btn gray" type="submit">解析全部已下载文件 → 写入流水库（PDF/CSV/OFX，自动去重）</button>
+  </form>
+  {% if running %}<p class="warn-text">有下载作业正在运行，浏览器请稍候刷新页面查看进度。</p>{% endif %}
+</div>
+
+<div class="card">
+  <h2>任务列表</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>#</th><th>银行/账号</th><th>账期</th><th>状态</th><th>进度</th><th>消息</th><th>更新时间</th><th>操作</th></tr>
+    {% for t in tasks %}
+    <tr>
+      <td>{{ t.id }}</td>
+      <td>{{ t.bank_name }}<br><span class="mono muted">{{ t.account_no }}</span></td>
+      <td>{{ t.date_from }}<br>~ {{ t.date_to }}</td>
+      <td>
+        {% if t.status=='success' %}<span class="tag ok">成功</span>
+        {% elif t.status=='running' %}<span class="tag run">运行中</span>
+        {% elif t.status=='failed' %}<span class="tag fail">失败</span>
+        {% else %}<span class="tag pend">待执行</span>{% endif %}
+      </td>
+      <td>{{ t.done_files }} / {{ t.total_files }}</td>
+      <td class="wrap muted">{{ t.message or '' }}</td>
+      <td class="muted">{{ t.updated_at }}</td>
+      <td>
+        <form method="post" action="{{ url_for('tasks_rerun', tid=t.id) }}">
+          <button class="btn gray sm" type="submit" {% if running %}disabled{% endif %}>单独重跑</button>
+        </form>
+      </td>
+    </tr>
+    <tr><td colspan="8" style="padding:0 10px">
+      <details>
+        <summary>执行日志与截图留痕（{{ events[t.id]|length }} 条）</summary>
+        <div class="logbox">
+        {% for e in events[t.id] %}
+          <div class="lv-{{ e.level }}">[{{ e.created_at }}] {{ e.level|upper }} {{ e.message }}
+            {% if e.screenshot %}<a href="{{ url_for('static_shot', path=e.screenshot) }}" target="_blank">
+              <img src="{{ url_for('static_shot', path=e.screenshot) }}"></a>{% endif %}
+          </div>
+        {% endfor %}
+        </div>
+      </details>
+    </td></tr>
+    {% else %}
+    <tr><td colspan="8" class="muted">还没有下载任务</td></tr>
+    {% endfor %}
+  </table>
+  </div>
+</div>
+{% endblock %}

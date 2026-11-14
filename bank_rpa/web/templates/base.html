@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}银企对账后台{% endblock %}</title>
+<style>
+:root{
+  --pri:#1f5fbf; --pri-d:#174a96; --bg:#f4f6fa; --line:#e3e8f0;
+  --ok:#1a8f4d; --warn:#c77700; --err:#c63636; --text:#23303d; --muted:#7b8794;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+header{background:linear-gradient(120deg,#163d7a,#1f5fbf);color:#fff;padding:0 28px;display:flex;align-items:center;height:58px}
+header .brand{font-weight:700;font-size:17px;letter-spacing:1px}
+header .brand small{font-weight:400;opacity:.75;margin-left:10px;font-size:12px}
+nav{margin-left:36px;display:flex;gap:4px;height:100%}
+nav a{color:#dce7fb;text-decoration:none;padding:0 16px;display:flex;align-items:center;height:100%;border-bottom:3px solid transparent;font-size:13.5px}
+nav a:hover{color:#fff;background:rgba(255,255,255,.08)}
+nav a.active{color:#fff;border-bottom-color:#ffd24d;background:rgba(255,255,255,.12)}
+main{max-width:1280px;margin:22px auto;padding:0 22px}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:20px 22px;margin-bottom:20px;box-shadow:0 1px 3px rgba(20,40,80,.05)}
+h2{margin:0 0 16px;font-size:17px}
+h3{font-size:15px;margin:22px 0 10px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{background:#f7f9fc;color:#4a5a70;font-weight:600;position:sticky;top:0}
+tr:hover td{background:#f8fbff}
+td.wrap,th.wrap{white-space:normal;min-width:160px}
+.btn{display:inline-block;border:1px solid var(--pri);background:var(--pri);color:#fff;padding:7px 16px;border-radius:6px;cursor:pointer;font-size:13px;text-decoration:none}
+.btn:hover{background:var(--pri-d)}
+.btn.sec{background:#fff;color:var(--pri)}
+.btn.gray{background:#fff;border-color:#b7c2d0;color:#55637a}
+.btn.sm{padding:4px 10px;font-size:12px}
+.btn.danger{background:var(--err);border-color:var(--err)}
+input,select{padding:7px 10px;border:1px solid #c6d0de;border-radius:6px;font-size:13px;font-family:inherit}
+input[type=date]{width:140px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.tag{display:inline-block;padding:2px 9px;border-radius:11px;font-size:12px;font-weight:600}
+.tag.ok{background:#e2f5ea;color:var(--ok)} .tag.run{background:#e6efff;color:var(--pri)}
+.tag.fail{background:#fde8e8;color:var(--err)} .tag.pend{background:#f1f3f6;color:var(--muted)}
+.tag.auto{background:#e6efff;color:var(--pri)} .tag.manual{background:#fff3dd;color:var(--warn)}
+.tag.ign{background:#f1f3f6;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+.kpi{background:#f7f9fc;border:1px solid var(--line);border-radius:10px;padding:16px}
+.kpi .n{font-size:26px;font-weight:700;color:var(--pri-d)}
+.kpi .l{color:var(--muted);font-size:12px;margin-top:4px}
+.flash{background:#e6f0ff;border:1px solid #b9d2f7;color:#174a96;padding:10px 16px;border-radius:8px;margin-bottom:16px;font-size:13px}
+.muted{color:var(--muted)} .ok-text{color:var(--ok)} .err-text{color:var(--err)} .warn-text{color:var(--warn)}
+.mono{font-family:Consolas,monospace}
+.logbox{background:#1e2733;color:#c9d6e8;border-radius:8px;padding:12px;font-size:12px;max-height:230px;overflow:auto;font-family:Consolas,monospace;line-height:1.7}
+.logbox .lv-error{color:#ff8a8a}.logbox .lv-warn{color:#ffd27a}.logbox .lv-info{color:#9fd19f}
+.logbox img{max-width:260px;border:1px solid #445;border-radius:4px;margin-top:6px;display:block}
+details summary{cursor:pointer;color:var(--pri);font-size:12.5px;margin:6px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:980px){.grid2{grid-template-columns:1fr}nav a{padding:0 9px;font-size:12px}}
+.scroll{overflow-x:auto}
+.amt-in{color:var(--ok)} .amt-out{color:var(--err)}
+.pill{font-size:11px;background:#eef2f7;border-radius:8px;padding:1px 7px;color:#5a6b80;margin-right:4px}
+.checkcol{width:34px;text-align:center}
+.diff-zero{color:var(--ok)} .diff-tail{color:var(--warn);font-weight:600}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">银企自动对账平台 <small>本地仿真 · RPA + Playwright</small></div>
+  <nav>
+    <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint=='dashboard' else '' }}">总览</a>
+    <a href="{{ url_for('accounts_page') }}" class="{{ 'active' if request.endpoint=='accounts_page' else '' }}">账户配置</a>
+    <a href="{{ url_for('tasks_page') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('tasks') else '' }}">下载任务</a>
+    <a href="{{ url_for('txns_page') }}" class="{{ 'active' if request.endpoint=='txns_page' else '' }}">流水库</a>
+    <a href="{{ url_for('matches_page') }}" class="{{ 'active' if request.endpoint=='matches_page' else '' }}">对账结果</a>
+    <a href="{{ url_for('exceptions_page') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('exceptions') else '' }}">异常处理</a>
+  </nav>
+</header>
+<main>
+  {% with messages = get_flashed_messages() %}
+    {% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}
+  {% endwith %}
+  {% block body %}{% endblock %}
+</main>
+</body>
+</html>

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}对账结果{% endblock %}
+{% block body %}
+<div class="card">
+  <h2>自动对账结果</h2>
+  <div class="toolbar">
+    <form method="post" action="{{ url_for('reconcile_run') }}">
+      <button class="btn" type="submit">运行 / 重新运行自动对账</button>
+    </form>
+    <span class="muted">规则：1:1 评分（金额45 + 户名25 + 日期18 + 摘要12）→ 一对多 → 多对一，尾差容忍 0.10 元</span>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><div class="n">{{ rate }}%</div><div class="l">自动匹配率（目标 ≥ 95%）</div></div>
+    <div class="kpi"><div class="n">{{ total_txn }}</div><div class="l">银行流水总数</div></div>
+    <div class="kpi"><div class="n">{{ groups|length }}</div><div class="l">匹配组数量</div></div>
+  </div>
+  <h3>规则分布</h3>
+  <table style="max-width:560px">
+    <tr><th>规则</th><th>状态</th><th>组数</th></tr>
+    {% for r in rule_stat %}
+    <tr>
+      <td>
+        {% set rn = {'exact':'精确匹配','near11':'尾差匹配','one_to_many':'一对多','many_to_one':'多对一','manual':'人工处理'} %}
+        {{ rn.get(r.rule_code, r.rule_code) }}
+      </td>
+      <td>{% if r.status=='auto' %}<span class="tag auto">自动</span>
+          {% elif r.status=='manual' %}<span class="tag manual">人工</span>
+          {% else %}<span class="tag ign">忽略</span>{% endif %}</td>
+      <td>{{ r.c }}</td>
+    </tr>
+    {% else %}<tr><td colspan="3" class="muted">尚未运行对账</td></tr>{% endfor %}
+  </table>
+</div>
+
+<div class="card">
+  <h2>匹配明细（最近 1000 组）</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>#</th><th>规则/状态</th><th>银行流水</th><th>ERP 收付款</th><th>银行合计</th><th>ERP合计</th><th>差额</th><th>备注</th></tr>
+    {% for g in groups %}
+    <tr>
+      <td>{{ g.id }}</td>
+      <td>
+        {% set rn = {'exact':'精确','near11':'尾差','one_to_many':'一对多','many_to_one':'多对一','manual':'人工'} %}
+        <div>{{ rn.get(g.rule_code, g.rule_code) }}</div>
+        {% if g.status=='auto' %}<span class="tag auto">自动</span>
+        {% elif g.status=='manual' %}<span class="tag manual">人工</span>
+        {% else %}<span class="tag ign">忽略</span>{% endif %}
+      </td>
+      <td class="wrap">
+        {% for t in g.txns %}
+          <div>{{ t.txn_date }} {{ '收' if t.direction=='in' else '付' }}
+            <b class="mono">{{ '%.2f'|format(t.amount) }}</b>
+            {{ t.counterparty }} <span class="muted">{{ t.summary }}</span></div>
+        {% else %}<span class="muted">无（人工忽略）</span>{% endfor %}
+      </td>
+      <td class="wrap">
+        {% for e in g.erps %}
+          <div>{{ e.record_date }} {{ '收' if e.direction=='in' else '付' }}
+            <b class="mono">{{ '%.2f'|format(e.amount) }}</b>
+            {{ e.counterparty }} <span class="muted">{{ e.summary }}</span></div>
+        {% endfor %}
+      </td>
+      <td class="mono">{{ '%.2f'|format(g.txn_total) }}</td>
+      <td class="mono">{{ '%.2f'|format(g.erp_total) }}</td>
+      <td class="mono {{ 'diff-zero' if g.diff==0 else 'diff-tail' }}">{{ '%.2f'|format(g.diff) }}</td>
+      <td class="wrap muted">{{ g.note or '' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8" class="muted">暂无匹配结果</td></tr>
+    {% endfor %}
+  </table>
+  </div>
+</div>
+{% endblock %}

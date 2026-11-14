@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}流水库{% endblock %}
+{% block body %}
+<div class="card">
+  <h2>统一流水库（PDF 回单 / CSV / OFX 解析归一化后，按账户+流水号去重）</h2>
+  <form class="toolbar" method="get">
+    <select name="bank">
+      <option value="">全部银行</option>
+      {% set bnames = {'icbc':'工商银行','cmb':'招商银行','ccb':'建设银行','boc':'中国银行','citic':'中信银行'} %}
+      {% for k,v in bnames.items() %}
+      <option value="{{ k }}" {% if bank==k %}selected{% endif %}>{{ v }}</option>
+      {% endfor %}
+    </select>
+    <select name="direction">
+      <option value="">全部方向</option>
+      <option value="in" {% if direction=='in' %}selected{% endif %}>收入</option>
+      <option value="out" {% if direction=='out' %}selected{% endif %}>支出</option>
+    </select>
+    <input name="q" value="{{ q }}" placeholder="搜对方户名/摘要/流水号" style="min-width:240px">
+    <button class="btn" type="submit">筛选</button>
+  </form>
+  <div style="margin-bottom:10px">
+    {% for s in src_stat %}
+      <span class="pill">来源 {{ s.source_types }}：{{ s.c }} 笔</span>
+    {% endfor %}
+  </div>
+  <div class="scroll">
+  <table>
+    <tr><th>流水号</th><th>日期</th><th>银行/账号</th><th>方向</th><th>金额(元)</th>
+        <th>对方户名</th><th>摘要</th><th>来源</th></tr>
+    {% for t in txns %}
+    <tr>
+      <td class="mono">{{ t.txn_uid }}</td>
+      <td>{{ t.txn_date }}</td>
+      <td>{{ t.bank_name }}<br><span class="mono muted">{{ t.account_no }}</span></td>
+      <td>{% if t.direction=='in' %}<span class="amt-in">收入</span>{% else %}<span class="amt-out">支出</span>{% endif %}</td>
+      <td class="mono">{{ '%.2f'|format(t.amount) }}</td>
+      <td class="wrap">{{ t.counterparty }}</td>
+      <td class="wrap muted">{{ t.summary }}</td>
+      <td>
+        {% for st in t.source_types|fromjson %}
+          <span class="pill">{{ '回单' if st=='receipt' else '流水文件' }}</span>
+        {% endfor %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8" class="muted">暂无数据，请先在下载任务页完成下载并解析入库</td></tr>
+    {% endfor %}
+  </table>
+  </div>
+  <p class="muted" style="margin-top:10px">最多展示 500 条；同一笔在回单和流水文件中同时出现时合并为一条，来源标签同时保留。</p>
+</div>
+{% endblock %}
